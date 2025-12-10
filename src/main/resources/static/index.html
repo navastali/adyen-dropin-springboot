@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Adyen Drop-in - PayPal Demo</title>
+  <link rel="stylesheet"
+    href="https://checkoutshopper-test.adyen.com/checkoutshopper/sdk/5.57.0/adyen.css" />
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #dropin-container { max-width: 480px; margin: 20px auto; }
+  </style>
+</head>
+<body>
+  <h2>Adyen Drop-in — PayPal demo</h2>
+  <p>This demo will show PayPal automatically when enabled for your Adyen merchant account and when using a supported device/browser.</p>
+
+  <div id="dropin-container"></div>
+
+  <script src="https://checkoutshopper-test.adyen.com/checkoutshopper/sdk/5.57.0/adyen.js"></script>
+  <script>
+    async function initCheckout() {
+      // fetch paymentMethods from our backend
+      const pmResp = await fetch('/api/paymentMethods', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ merchantAccount: '' }) // backend will inject merchantAccount if empty
+      }).then(r => r.json());
+
+      const clientKey = window.__ADYEN_CLIENT_KEY__ || '<REPLACE_WITH_CLIENT_KEY>';
+      const environment = '<REPLACE_ENV>'; // 'test' or 'live'
+
+      const checkout = await AdyenCheckout({
+        environment: environment === 'live' ? 'live' : 'test',
+        clientKey: clientKey,
+        paymentMethodsResponse: pmResp,
+        onSubmit: async (state, dropin) => {
+          // send payment creation to backend
+          const res = await fetch('/api/payments', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+              paymentMethod: state.data.paymentMethod,
+              amount: { currency: 'USD', value: 1000 },
+              reference: 'ORDER-' + Date.now(),
+              returnUrl: window.location.origin + '/result'
+            })
+          }).then(r => r.json());
+
+          if (res.action) {
+            dropin.handleAction(res.action);
+          } else if (res.resultCode) {
+            // show result
+            alert('Result: ' + res.resultCode);
+          } else {
+            console.error(res);
+            alert('Unexpected response - see console');
+          }
+        },
+        onAdditionalDetails: async (state, dropin) => {
+          const res = await fetch('/api/details', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(state.data)
+          }).then(r => r.json());
+          dropin.handleAction(res);
+        }
+      });
+
+      checkout.create('dropin').mount('#dropin-container');
+    }
+
+    initCheckout();
+  </script>
+</body>
+</html>

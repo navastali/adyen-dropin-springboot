@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - ADYEN_API_KEY=${ADYEN_API_KEY}
+      - ADYEN_CLIENT_KEY=${ADYEN_CLIENT_KEY}
+      - ADYEN_MERCHANT_ACCOUNT=${ADYEN_MERCHANT_ACCOUNT}
+      - ADYEN_ENVIRONMENT=${ADYEN_ENVIRONMENT:-test}

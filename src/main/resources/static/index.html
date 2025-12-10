@@ -27,8 +27,8 @@
         body: JSON.stringify({ merchantAccount: '' }) // backend will inject merchantAccount if empty
       }).then(r => r.json());
 
-      const clientKey = window.__ADYEN_CLIENT_KEY__ || '<REPLACE_WITH_CLIENT_KEY>';
-      const environment = '<REPLACE_ENV>'; // 'test' or 'live'
+      const clientKey = "test_2KQKSDJKZBB7ZMAP5DPIIHPPJQKSQLW5"; // '<REPLACE_WITH_CLIENT_KEY>';
+      const environment = 'test'; // 'test' or 'live'
 
       const checkout = await AdyenCheckout({
         environment: environment === 'live' ? 'live' : 'test',

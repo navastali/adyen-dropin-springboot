@@ -1,5 +1,5 @@
 # Build stage
-FROM maven:3.8.7-openjdk-8 AS build
+FROM maven:3.6.3-jdk-8 AS backend-build
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src

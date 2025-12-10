@@ -1,14 +1,27 @@
+#############################################################
 # Build stage
-FROM maven:3.6.3-jdk-8 AS backend-build
+#############################################################
+FROM maven:3.8.7-openjdk-8 AS build
+
 WORKDIR /app
+
 COPY pom.xml .
 COPY src ./src
+
 RUN mvn -B -DskipTests package
 
-# Run stage
+#############################################################
+# Runtime stage
+#############################################################
 FROM eclipse-temurin:8-jre
+
 WORKDIR /app
+
+# Copy the final JAR from the build stage
 COPY --from=build /app/target/adyen-dropin-springboot-0.0.1-SNAPSHOT.jar app.jar
+
 ENV ADYEN_ENVIRONMENT=test
+
 EXPOSE 8080
+
 ENTRYPOINT ["java","-jar","/app/app.jar"]

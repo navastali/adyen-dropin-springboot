@@ -24,7 +24,7 @@
       const pmResp = await fetch('/api/paymentMethods', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ merchantAccount: '' }) // backend will inject merchantAccount if empty
+        body: JSON.stringify({ merchantAccount: 'OnebillSoftwareECOM' }) // backend will inject merchantAccount if empty
       }).then(r => r.json());
 
       const clientKey = "test_2KQKSDJKZBB7ZMAP5DPIIHPPJQKSQLW5"; // '<REPLACE_WITH_CLIENT_KEY>';

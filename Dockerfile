@@ -6,7 +6,7 @@ COPY src ./src
 RUN mvn -B -DskipTests package
 
 # Run stage
-FROM openjdk:8-jre
+FROM eclipse-temurin:8-jre
 WORKDIR /app
 COPY --from=build /app/target/adyen-dropin-springboot-0.0.1-SNAPSHOT.jar app.jar
 ENV ADYEN_ENVIRONMENT=test

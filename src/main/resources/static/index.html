@@ -51,7 +51,7 @@
             dropin.handleAction(res.action);
           } else if (res.resultCode) {
             // show result
-            alert('Result: ' + res);
+            alert('Result: ' + JSON.stringify(res));
           } else {
             console.error(res);
             alert('Unexpected response - see console');

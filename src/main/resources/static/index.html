@@ -71,7 +71,7 @@
               dropin.handleAction(res.action);
             } else if (res.resultCode) {
               // ✅ FINAL result — payment is complete
-              console.log("Payment result:", res.resultCode);
+              console.log("Payment result:", JSON.stringify(res));
           
               if (res.resultCode === "Authorised") {
                 alert("Payment successful!");

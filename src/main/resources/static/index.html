@@ -57,14 +57,31 @@
             alert('Unexpected response - see console');
           }
         },
+
+
         onAdditionalDetails: async (state, dropin) => {
-          const res = await fetch('/api/details', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify(state.data)
-          }).then(r => r.json());
-          dropin.handleAction(res);
-        }
+            const res = await fetch('/api/details', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(state.data)
+            }).then(r => r.json());
+          
+            // ✅ ONLY call handleAction if an action exists
+            if (res.action) {
+              dropin.handleAction(res.action);
+            } else if (res.resultCode) {
+              // ✅ FINAL result — payment is complete
+              console.log("Payment result:", res.resultCode);
+          
+              if (res.resultCode === "Authorised") {
+                alert("Payment successful!");
+              } else {
+                alert("Payment failed: " + res.resultCode);
+              }
+            } else {
+              console.error("Unexpected /details response", res);
+            }
+      }
       });
 
       checkout.create('dropin').mount('#dropin-container');

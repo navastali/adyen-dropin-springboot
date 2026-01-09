@@ -29,18 +29,6 @@ public class ProxyController {
                 : "https://checkout-test.adyen.com";
     }
 
-    // ===============================
-    // Fetch stored payment methods
-    // ===============================
-    @PostMapping("/api/storedPaymentMethods")
-    public String storedPaymentMethods(HttpServletRequest request) throws IOException {
-        String body = request.getReader().lines().collect(Collectors.joining("\n"));
-        if (body == null || body.trim().isEmpty()) {
-            body = String.format("{\n  \"merchantAccount\": \"%s\"\n}", merchantAccount);
-        }
-        return proxyToAdyen("/v71/paymentMethods", body, "POST");
-    }
-
     private String proxyToAdyen(String path, String body, String method) throws IOException {
         String endpoint = checkoutBase() + path;
         URL url = new URL(endpoint);

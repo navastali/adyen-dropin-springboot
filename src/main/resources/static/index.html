@@ -15,7 +15,32 @@
   <h2>Adyen Drop-in — PayPal demo</h2>
   <p>This demo will show PayPal automatically when enabled for your Adyen merchant account and when using a supported device/browser.</p>
 
-  <div id="dropin-container"></div>
+  
+<div>
+  
+<h3>Shopper & Recurring Details</h3>
+<label>
+  Shopper Reference:
+  <input id="shopperRef" value="SHOPPER_123"/>
+</label>
+<br/>
+<label>
+  Recurring Processing Model:
+  <select id="recurringModel">
+    <option value="CardOnFile">CardOnFile</option>
+    <option value="Subscription">Subscription</option>
+    <option value="UnscheduledCardOnFile">UnscheduledCardOnFile</option>
+  </select>
+</label>
+<br/><br/>
+<button id="loadTokens">Load Stored Payment Methods</button>
+
+<h3>Saved payment methods</h3>
+
+  <ul id="tokens"></ul>
+</div>
+<div id="dropin-container"></div>
+
 
   <script src="https://checkoutshopper-test.adyen.com/checkoutshopper/sdk/5.57.0/adyen.js"></script>
   <script>
@@ -30,7 +55,63 @@
       const clientKey = "test_2KQKSDJKZBB7ZMAP5DPIIHPPJQKSQLW5"; // '<REPLACE_WITH_CLIENT_KEY>';
       const environment = 'test'; // 'test' or 'live'
 
-      const checkout = await AdyenCheckout({
+      
+// Fetch stored payment methods (tokens)
+
+document.getElementById('loadTokens').onclick = async () => {
+  document.getElementById('tokens').innerHTML = '';
+  const shopperReference = document.getElementById('shopperRef').value;
+  const recurringModel = document.getElementById('recurringModel').value;
+
+  const storedResp = await fetch('/api/storedPaymentMethods', {
+
+  method: 'POST',
+  headers: {'Content-Type':'application/json'},
+  body: JSON.stringify({
+    shopperReference: shopperReference,
+    recurringProcessingModel: recurringModel
+  })
+}).then(r => r.json());
+
+const tokenList = document.getElementById('tokens');
+if (storedResp.storedPaymentMethods) {
+  storedResp.storedPaymentMethods.forEach(pm => {
+    const shopperReference = document.getElementById('shopperRef').value;
+    const recurringModel = document.getElementById('recurringModel').value;
+
+    const li = document.createElement('li');
+    li.innerHTML = pm.brand + ' **** ' + pm.lastFour +
+      ' <button>Pay</button>';
+    li.querySelector('button').onclick = async () => {
+      const res = await fetch('/api/payments', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          shopperReference: shopperReference,
+          recurringProcessingModel: recurringModel,
+          paymentMethod: {
+            type: 'scheme',
+            storedPaymentMethodId: pm.id
+          },
+          amount: { currency: 'USD', value: 1000 },
+          reference: 'TOKEN_PAY_' + Date.now(),
+          returnUrl: window.location.origin + '/result'
+        })
+      }).then(r => r.json());
+
+      if (res.action) {
+        checkout.handleAction(res.action);
+      } else {
+        alert('Token payment result: ' + res.resultCode);
+      }
+    };
+    tokenList.appendChild(li);
+  });
+};
+}
+
+const checkout = await AdyenCheckout({
+
         environment: environment === 'live' ? 'live' : 'test',
         clientKey: clientKey,
         paymentMethodsResponse: pmResp,
@@ -47,7 +128,6 @@
             })
           }).then(r => r.json());
 
-          console.log(JSON.stringify(res));
           if (res.action) {
             dropin.handleAction(res.action);
           } else if (res.resultCode) {

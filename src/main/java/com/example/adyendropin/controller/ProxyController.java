@@ -14,6 +14,20 @@ import java.util.stream.Collectors;
 @RestController
 public class ProxyController {
 
+    // ===============================
+    // Fetch stored payment methods
+    // ===============================
+    @PostMapping("/api/storedPaymentMethods")
+    public String storedPaymentMethods(HttpServletRequest request) throws IOException {
+        String body = request.getReader().lines().collect(Collectors.joining("\n"));
+        if (body == null || body.trim().isEmpty()) {
+            body = String.format("{\n  \"merchantAccount\": \"%s\"\n}", merchantAccount);
+        }
+        return proxyToAdyen("/v71/paymentMethods", body, "POST");
+    }
+
+
+
     @Value("${ADYEN_API_KEY:}")
     private String adyenApiKey;
 

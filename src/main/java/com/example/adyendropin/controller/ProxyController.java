@@ -14,20 +14,6 @@ import java.util.stream.Collectors;
 @RestController
 public class ProxyController {
 
-    // ===============================
-    // Fetch stored payment methods
-    // ===============================
-    @PostMapping("/api/storedPaymentMethods")
-    public String storedPaymentMethods(HttpServletRequest request) throws IOException {
-        String body = request.getReader().lines().collect(Collectors.joining("\n"));
-        if (body == null || body.trim().isEmpty()) {
-            body = String.format("{\n  \"merchantAccount\": \"%s\"\n}", merchantAccount);
-        }
-        return proxyToAdyen("/v71/paymentMethods", body, "POST");
-    }
-
-
-
     @Value("${ADYEN_API_KEY:}")
     private String adyenApiKey;
 
@@ -41,6 +27,18 @@ public class ProxyController {
         return adyenEnvironment.equalsIgnoreCase("live")
                 ? "https://checkout-live.adyen.com"
                 : "https://checkout-test.adyen.com";
+    }
+
+    // ===============================
+    // Fetch stored payment methods
+    // ===============================
+    @PostMapping("/api/storedPaymentMethods")
+    public String storedPaymentMethods(HttpServletRequest request) throws IOException {
+        String body = request.getReader().lines().collect(Collectors.joining("\n"));
+        if (body == null || body.trim().isEmpty()) {
+            body = String.format("{\n  \"merchantAccount\": \"%s\"\n}", merchantAccount);
+        }
+        return proxyToAdyen("/v71/paymentMethods", body, "POST");
     }
 
     private String proxyToAdyen(String path, String body, String method) throws IOException {

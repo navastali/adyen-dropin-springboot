@@ -39,7 +39,15 @@
 
   <ul id="tokens"></ul>
 </div>
+
+<div>
+  <h3>Captured Adyen References</h3>
+  <p>Shopper Reference (from Adyen): <b id="capturedShopperRef">-</b></p>
+  <p>Stored Payment Method ID: <b id="capturedTokenRef">-</b></p>
+</div>
+
 <div id="dropin-container"></div>
+
 
 
   <script src="https://checkoutshopper-test.adyen.com/checkoutshopper/sdk/5.57.0/adyen.js"></script>
@@ -50,7 +58,18 @@
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ merchantAccount: 'OnebillSoftwareECOM' }) // backend will inject merchantAccount if empty
-      }).then(r => r.json());
+      };
+
+if (shopperReference && shopperReference.trim() !== '') {
+  payload.shopperReference = shopperReference;
+}
+
+const res = await fetch('/api/payments', {
+  method: 'POST',
+  headers: {'Content-Type':'application/json'},
+  body: JSON.stringify(payload)
+}).then(r => r.json());
+
 
       const clientKey = "test_2KQKSDJKZBB7ZMAP5DPIIHPPJQKSQLW5"; // '<REPLACE_WITH_CLIENT_KEY>';
       const environment = 'test'; // 'test' or 'live'
@@ -71,7 +90,18 @@ document.getElementById('loadTokens').onclick = async () => {
     shopperReference: shopperReference,
     recurringProcessingModel: recurringModel
   })
+};
+
+if (shopperReference && shopperReference.trim() !== '') {
+  payload.shopperReference = shopperReference;
+}
+
+const res = await fetch('/api/payments', {
+  method: 'POST',
+  headers: {'Content-Type':'application/json'},
+  body: JSON.stringify(payload)
 }).then(r => r.json());
+
 
 const tokenList = document.getElementById('tokens');
 if (storedResp.storedPaymentMethods) {
@@ -83,7 +113,9 @@ if (storedResp.storedPaymentMethods) {
     li.innerHTML = pm.brand + ' **** ' + pm.lastFour +
       ' <button>Pay</button>';
     li.querySelector('button').onclick = async () => {
-      const res = await fetch('/api/payments', {
+      
+const payload = {
+
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({
@@ -97,7 +129,18 @@ if (storedResp.storedPaymentMethods) {
           reference: 'TOKEN_PAY_' + Date.now(),
           returnUrl: window.location.origin + '/result'
         })
-      }).then(r => r.json());
+      };
+
+if (shopperReference && shopperReference.trim() !== '') {
+  payload.shopperReference = shopperReference;
+}
+
+const res = await fetch('/api/payments', {
+  method: 'POST',
+  headers: {'Content-Type':'application/json'},
+  body: JSON.stringify(payload)
+}).then(r => r.json());
+
 
       if (res.action) {
         checkout.handleAction(res.action);
@@ -117,7 +160,9 @@ const checkout = await AdyenCheckout({
         paymentMethodsResponse: pmResp,
         onSubmit: async (state, dropin) => {
           // send payment creation to backend
-          const res = await fetch('/api/payments', {
+          
+const payload = {
+
             method: 'POST',
             headers: {'Content-Type':'application/json'},
             body: JSON.stringify({
@@ -126,7 +171,18 @@ const checkout = await AdyenCheckout({
               reference: 'ORDER-' + Date.now(),
               returnUrl: window.location.origin + '/result'
             })
-          }).then(r => r.json());
+          };
+
+if (shopperReference && shopperReference.trim() !== '') {
+  payload.shopperReference = shopperReference;
+}
+
+const res = await fetch('/api/payments', {
+  method: 'POST',
+  headers: {'Content-Type':'application/json'},
+  body: JSON.stringify(payload)
+}).then(r => r.json());
+
 
           if (res.action) {
             dropin.handleAction(res.action);
@@ -145,7 +201,18 @@ const checkout = await AdyenCheckout({
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(state.data)
-            }).then(r => r.json());
+            };
+
+if (shopperReference && shopperReference.trim() !== '') {
+  payload.shopperReference = shopperReference;
+}
+
+const res = await fetch('/api/payments', {
+  method: 'POST',
+  headers: {'Content-Type':'application/json'},
+  body: JSON.stringify(payload)
+}).then(r => r.json());
+
           
             // ✅ ONLY call handleAction if an action exists
             if (res.action) {

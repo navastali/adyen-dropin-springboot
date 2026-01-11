@@ -2,204 +2,92 @@
 <html>
 <head>
   <meta charset="utf-8"/>
-  <title>Adyen Drop-in – Token Capture & Token Payment</title>
-
-  <!-- Adyen Drop-in CSS -->
-  <link
-    rel="stylesheet"
-    href="https://checkoutshopper-test.adyen.com/checkoutshopper/sdk/5.57.0/adyen.css"
-  />
-
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Adyen Drop-in - PayPal Demo</title>
+  <link rel="stylesheet"
+    href="https://checkoutshopper-test.adyen.com/checkoutshopper/sdk/5.57.0/adyen.css" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-    .section {
-      margin-top: 25px;
-      padding: 15px;
-      border: 1px solid #ddd;
-    }
-    label {
-      display: block;
-      margin-top: 10px;
-    }
-    button {
-      margin-top: 10px;
-    }
-    input {
-      width: 360px;
-    }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #dropin-container { max-width: 480px; margin: 20px auto; }
   </style>
 </head>
-
 <body>
+  <h2>Adyen Drop-in — PayPal demo</h2>
+  <p>This demo will show PayPal automatically when enabled for your Adyen merchant account and when using a supported device/browser.</p>
 
-<h2>Adyen Drop-in – Token Demo</h2>
-
-<!-- ===============================
-     1. Token captured from Adyen
-================================== -->
-<div class="section">
-  <h3>Token captured from Adyen</h3>
-  <p>
-    Stored Payment Method ID (Token):
-    <b id="capturedToken">-</b>
-  </p>
-</div>
-
-<!-- ===============================
-     2. Token payment section
-================================== -->
-<div class="section">
-  <h3>Pay using token</h3>
-
-  <label>
-    Enter Stored Payment Method ID (token):
-    <input id="tokenInput"/>
-  </label>
-
-  <button id="payWithToken">Pay with Token</button>
-</div>
-
-<!-- ===============================
-     3. Drop-in widget
-================================== -->
-<div class="section">
-  <h3>New Payment (Adyen Drop-in)</h3>
   <div id="dropin-container"></div>
-</div>
 
-<!-- Adyen JS -->
-<script src="https://checkoutshopper-test.adyen.com/checkoutshopper/sdk/5.57.0/adyen.js"></script>
-
-<script>
-(async function () {
-
-  /* -----------------------------
-     Load payment methods
-  ----------------------------- */
-  const paymentMethodsResponse = await fetch("/api/paymentMethods", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({})
-  }).then(r => r.json());
-
-  const checkout = await AdyenCheckout({
-    environment: "test",
-    clientKey: "test_2KQKSDJKZBB7ZMAP5DPIIHPPJQKSQLW5",
-    paymentMethodsResponse,
-
-    /* -----------------------------
-       Drop-in payment
-    ----------------------------- */
-    onSubmit: async (state, dropin) => {
-
-      const payload = {
-        paymentMethod: state.data.paymentMethod,
-        amount: { currency: "USD", value: 1000 },
-        reference: "ORDER_" + Date.now(),
-        returnUrl: window.location.origin + "/result",
-
-        // Required for token creation
-        storePaymentMethod: true,
-        recurringProcessingModel: "CardOnFile"
-      };
-
-      const res = await fetch("/api/payments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+  <script src="https://checkoutshopper-test.adyen.com/checkoutshopper/sdk/5.57.0/adyen.js"></script>
+  <script>
+    async function initCheckout() {
+      // fetch paymentMethods from our backend
+      const pmResp = await fetch('/api/paymentMethods', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ merchantAccount: 'OnebillSoftwareECOM' }) // backend will inject merchantAccount if empty
       }).then(r => r.json());
 
-      captureToken(res);
+      const clientKey = "test_2KQKSDJKZBB7ZMAP5DPIIHPPJQKSQLW5"; // '<REPLACE_WITH_CLIENT_KEY>';
+      const environment = 'test'; // 'test' or 'live'
 
-      if (res.action) {
-        dropin.handleAction(res.action);
-      } else {
-        alert("Payment result: " + res.resultCode);
+      const checkout = await AdyenCheckout({
+        environment: environment === 'live' ? 'live' : 'test',
+        clientKey: clientKey,
+        paymentMethodsResponse: pmResp,
+        onSubmit: async (state, dropin) => {
+          // send payment creation to backend
+          const res = await fetch('/api/payments', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+              paymentMethod: state.data.paymentMethod,
+              amount: { currency: 'USD', value: 1000 },
+              reference: 'ORDER-' + Date.now(),
+              returnUrl: window.location.origin + '/result'
+            })
+          }).then(r => r.json());
+
+          if (res.action) {
+            dropin.handleAction(res.action);
+          } else if (res.resultCode) {
+            // show result
+            alert('Result: ' + JSON.stringify(res));
+          } else {
+            console.error(res);
+            alert('Unexpected response - see console');
+          }
+        },
+
+
+        onAdditionalDetails: async (state, dropin) => {
+            const res = await fetch('/api/details', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(state.data)
+            }).then(r => r.json());
+          
+            // ✅ ONLY call handleAction if an action exists
+            if (res.action) {
+              dropin.handleAction(res.action);
+            } else if (res.resultCode) {
+              // ✅ FINAL result — payment is complete
+              console.log("Payment result:", JSON.stringify(res));
+          
+              if (res.resultCode === "Authorised") {
+                alert("Payment successful!");
+              } else {
+                alert("Payment failed: " + res.resultCode);
+              }
+            } else {
+              console.error("Unexpected /details response", res);
+            }
       }
-    },
+      });
 
-    /* -----------------------------
-       3DS / redirect flow
-    ----------------------------- */
-    onAdditionalDetails: async (state, dropin) => {
-
-      const res = await fetch("/api/details", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(state.data)
-      }).then(r => r.json());
-
-      captureToken(res);
-
-      if (res.action) {
-        dropin.handleAction(res.action);
-      } else {
-        alert("Payment result: " + res.resultCode);
-      }
-    }
-  });
-
-  checkout.create("dropin").mount("#dropin-container");
-
-  /* -----------------------------
-     Token payment (manual entry)
-  ----------------------------- */
-  document.getElementById("payWithToken").onclick = async () => {
-
-    const token = document.getElementById("tokenInput").value;
-
-    if (!token) {
-      alert("Please enter a token");
-      return;
+      checkout.create('dropin').mount('#dropin-container');
     }
 
-    const payload = {
-      paymentMethod: {
-        type: "scheme",
-        storedPaymentMethodId: token
-      },
-      amount: { currency: "USD", value: 1000 },
-      reference: "TOKEN_PAY_" + Date.now(),
-      returnUrl: window.location.origin + "/result",
-      recurringProcessingModel: "CardOnFile"
-    };
-
-    const res = await fetch("/api/payments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    }).then(r => r.json());
-
-    captureToken(res);
-
-    if (res.action) {
-      checkout.handleAction(res.action);
-    } else {
-      alert("Token payment result: " + res.resultCode);
-    }
-  };
-
-  /* -----------------------------
-     Capture token from Adyen
-  ----------------------------- */
-  function captureToken(res) {
-    if (
-      res.additionalData &&
-      res.additionalData["recurring.recurringDetailReference"]
-    ) {
-      const token =
-        res.additionalData["recurring.recurringDetailReference"];
-
-      document.getElementById("capturedToken").innerText = token;
-      document.getElementById("tokenInput").value = token;
-    }
-  }
-
-})();
-</script>
-
+    initCheckout();
+  </script>
 </body>
 </html>
